@@ -10,16 +10,19 @@ git clone https://github.com/YOUR-ACCOUNT/azdo-dashboard.git /opt/azdo-dashboard
 
 Use chown -R, not a plain chown. Without -R, subfolders created with sudo stay owned by root, and later copies into them fail with "Permission denied".
 
+
 2. Create a virtual environment and install dependencies
 ### bash
 **cd /opt/azdo-dashboard
 python3 -m venv /opt/azdo-dashboard/venv
 /opt/azdo-dashboard/venv/bin/pip install -r /opt/azdo-dashboard/requirements.txt**
 
+
 3. Create a PAT
 In Azure DevOps, open User settings → Personal access tokens → New Token. Grant only Build → Read, and set an expiry you'll remember to renew. The dashboard shows a clear banner when the token expires.
 
 Treat the token like a password. Don't paste it into screenshots, tickets or chat. If it is ever exposed, revoke it and create a new one.
+
 
 4. Configure
 ### bash
@@ -47,12 +50,15 @@ LOOKBACK_BUILDS	300	Most recent builds fetched per project. Raise it if rarely r
 ### bash
 **grep -v PAT /opt/azdo-dashboard/azdo.env
 **
+
+
 5. Test in the foreground
 ### bash
 **set -a; . /opt/azdo-dashboard/azdo.env; set +a
 /opt/azdo-dashboard/venv/bin/python /opt/azdo-dashboard/app.py**
 
 Within a few seconds the log should show a line like polled 14 pipelines across 4 project(s). Browse to http://<host>:5050. When the page looks right, press Ctrl+C.
+
 
 6. Install the systemd service
 Set the service account to the user that owns /opt/azdo-dashboard, then install and start it. Replace ansible with your account name:
@@ -66,6 +72,7 @@ sudo systemctl enable --now azdo-dashboard
 sudo systemctl status azdo-dashboard --no-pager**
 
 The grep must print User=<your account> before you continue. The status should show active (running). From now on the dashboard starts at boot and restarts itself if it crashes.
+
 
 7. Open the firewall if needed
 If the page doesn't load from another machine but the service is running, allow the port:
