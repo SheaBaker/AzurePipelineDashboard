@@ -17,27 +17,6 @@ Stage track: every stage of the latest run in order, colored by state. A running
 
 The header summarizes the page, for example "2 running, 1 failing, 18 passing". When more than one project is configured, filter buttons appear, and the chosen filter is kept in the URL (/#project=Accounting) so a wall display can be pinned to one project. The page follows the viewer's light or dark system setting.
 
-How it works
- Azure DevOps REST API
-          ▲
-          │  outbound HTTPS only, authenticated with a PAT
-          │
- ┌────────┴───────────────────────────────┐
- │ Linux host (gunicorn, one worker)      │
- │                                        │
- │  poller thread ─ every 30 s: all runs  │
- │  stage thread  ─ every 5 s: stages of  │
- │                  in-progress runs      │
- │          │                             │
- │          ▼                             │
- │     in-memory cache                    │
- │          │                             │
- │   Flask: /  /api/state  /healthz       │
- └──────────┬─────────────────────────────┘
-            │  port 5050
-            ▼
-   browsers (refresh every 5 s)
-
 Browsers only ever read the cache, so ten people watching the page cost the same number of Azure DevOps API calls as one. Stage timelines of finished runs never change, so each one is fetched once and cached. If Azure DevOps can't be reached, the page keeps showing the last good data under a banner that explains what went wrong.
 
 All traffic to Azure DevOps is outbound, so no inbound firewall rule from the internet is needed.
@@ -46,14 +25,8 @@ Requirements
 A Linux host with Python 3.9 or newer (developed on Debian with Python 3.11)
 Outbound HTTPS to dev.azure.com
 An Azure DevOps personal access token (PAT) with the Build → Read scope and nothing more
-Project layout
-azdo-dashboard/
-├── app.py                   # Flask app, poller and stage refresher
-├── templates/
-│   └── index.html           # The dashboard page (HTML, CSS and JS in one file)
-├── requirements.txt         # flask, requests, gunicorn
-├── azdo.env.example         # Configuration template; copy to azdo.env
-├── azdo-dashboard.service   # systemd unit
-├── docs/
-│   └── TROUBLESHOOTING.md
-└── .gitignore               # Keeps azdo.env (your PAT) out of git
+<img width="382" height="368" alt="image" src="https://github.com/user-attachments/assets/d2379ccf-6080-4092-b6d6-d331be77765d" />
+
+<img width="380" height="470" alt="image" src="https://github.com/user-attachments/assets/8ef6a529-68bb-4d18-8b26-3de9c8e44c1c" />
+
+
