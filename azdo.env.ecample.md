@@ -1,4 +1,6 @@
-# Azure Pipelines dashboard configuration. Copy to /opt/azdo-dashboard/azdo.env and run: chmod 600 /opt/azdo-dashboard/azdo.env. NEVER commit the real azdo.env. It contains your PAT and is listed in .gitignore.
+# Azure Pipelines dashboard configuration. 
+Copy to /opt/azdo-dashboard/azdo.env and run: chmod 600 /opt/azdo-dashboard/azdo.env. 
+**NEVER** commit the real azdo.env. It contains your PAT and is listed in .gitignore.
 
 ### Organization name: the part after https://dev.azure.com/
 AZDO_ORG=your-org-name
