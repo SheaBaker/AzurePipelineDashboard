@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pipelines · {{ org }}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#EDF1F4; --surface:#FFFFFF; --ink:#1D2733; --muted:#5C6B7A; --line:#D3DBE2;
+  --passed:#2E7D5B; --failed:#B3261E; --running:#1F6FD1; --partial:#A86A12;
+  --queued:#6B5CA8; --canceled:#8A95A1; --unknown:#8A95A1;
+}
+@media (prefers-color-scheme:dark){:root{
+  --paper:#151B22; --surface:#1D252E; --ink:#E6ECF1; --muted:#94A3B1; --line:#2D3844;
+  --passed:#3F9E73; --failed:#D9483E; --running:#3D86E8; --partial:#C98A2B;
+  --queued:#8A7BD0; --canceled:#6E7985; --unknown:#6E7985;
+}}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--paper);color:var(--ink)}
+body{font:400 1.0625rem/1.45 "Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",sans-serif;
+     padding:1.5rem clamp(1rem,3vw,2.5rem) 3rem}
+a{color:inherit}
+a:focus-visible,button:focus-visible{outline:3px solid var(--running);outline-offset:2px}
+
+header{display:flex;flex-wrap:wrap;align-items:baseline;gap:.5rem 1.5rem;margin-bottom:1.25rem}
+h1{font-size:1.75rem;line-height:1.1;margin:0;font-weight:700}
+h1 small{font-weight:400;color:var(--muted);font-size:1rem;margin-left:.5rem}
+#summary{font-size:1.125rem;margin:0}
+#summary b{font-weight:700}
+#updated{margin-left:auto;color:var(--muted);font-size:.9375rem}
+
+#filters{display:flex;flex-wrap:wrap;gap:.5rem;margin-bottom:1rem}
+#filters button{font:inherit;font-size:.9375rem;padding:.3rem .8rem;border-radius:999px;cursor:pointer;
+  border:1px solid var(--line);background:var(--surface);color:var(--ink)}
+#filters button[aria-pressed="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+
+#banner{display:none;padding:.75rem 1rem;margin-bottom:1rem;border-left:6px solid var(--failed);
+  background:var(--surface)}
+#banner.show{display:block}
+
+#board{list-style:none;margin:0;padding:0;display:grid;gap:2px;background:var(--line);
+  border:2px solid var(--line);border-radius:6px;overflow:hidden}
+.row{display:grid;grid-template-columns:8.5rem minmax(0,1.6fr) minmax(0,1fr) 11rem auto;
+  align-items:center;gap:1.25rem;background:var(--surface);padding-right:1.25rem;min-height:4.25rem}
+.status{align-self:stretch;display:flex;flex-direction:column;justify-content:center;
+  padding:.5rem .9rem;color:#fff;font-weight:700;font-size:1.0625rem;text-decoration:none}
+.status span{font-weight:400;font-size:.8125rem;opacity:.9}
+.name{font-weight:700;font-size:1.1875rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.where{color:var(--muted);font-size:.875rem;font-weight:400;display:block}
+.detail{font-size:.9375rem;overflow:hidden}
+.detail .branch{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.detail .who{color:var(--muted);display:block}
+.time{font-size:.9375rem;text-align:right}
+.time .sub{display:block;color:var(--muted)}
+.history{display:flex;gap:3px;align-items:flex-end;justify-content:flex-end;min-width:3rem}
+.history a{display:block;width:9px;height:30px;border-radius:2px}
+
+.st-passed{background:var(--passed)} .st-failed{background:var(--failed)}
+.st-running{background:var(--running)} .st-partial{background:var(--partial)}
+.st-queued{background:var(--queued)} .st-canceled{background:var(--canceled)}
+.st-unknown{background:var(--unknown)}
+.status.st-running{animation:pulse 2.4s ease-in-out infinite}
+@keyframes pulse{50%{filter:brightness(1.18)}}
+@media (prefers-reduced-motion:reduce){.status.st-running{animation:none}}
+
+.empty{background:var(--surface);padding:2rem;color:var(--muted)}
+
+.row .status{grid-row:span 2}
+.stages{grid-column:2 / -1;display:flex;flex-wrap:wrap;align-items:center;gap:.3rem 0;
+  padding:0 0 .7rem;margin-top:-.35rem;font-size:.875rem}
+.stage{display:inline-flex;align-items:center;gap:.4rem;padding:.2rem .65rem;border-radius:4px;
+  color:#fff;white-space:nowrap}
+.stage .t{font-weight:400;opacity:.9}
+.sep{width:.8rem;height:2px;background:var(--line);flex:none}
+.stage.st-running{font-weight:700;animation:pulse 2.4s ease-in-out infinite}
+.stage.st-pending,.stage.st-skipped{background:transparent;color:var(--muted);box-shadow:inset 0 0 0 1px var(--line)}
+.stage.st-skipped{text-decoration:line-through}
+.stage.st-waiting{background:transparent;color:var(--partial);box-shadow:inset 0 0 0 2px var(--partial);font-weight:700}
+@media (prefers-reduced-motion:reduce){.stage.st-running{animation:none}}
+
+@media (max-width:860px){
+  .row{grid-template-columns:7rem minmax(0,1fr);gap:.35rem 1rem;padding:0 1rem .75rem 0}
+  .row .status{grid-row:span 5}
+  .stages{grid-column:2;margin-top:0}
+  .time{text-align:left} .history{justify-content:flex-start}
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>Pipelines<small>{{ org }}</small></h1>
+  <p id="summary" aria-live="polite">Loading…</p>
+  <span id="updated"></span>
+</header>
+<div id="filters" role="group" aria-label="Filter by project"></div>
+<div id="banner" role="alert"></div>
+<ul id="board"></ul>
+
+<script>
+const POLL = {{ poll }};
+const LABEL = {running:"Running",failed:"Failed",queued:"Queued",partial:"Partial",
+               canceled:"Canceled",passed:"Passed",unknown:"Unknown",
+               pending:"Not started",skipped:"Skipped",waiting:"Awaiting approval"};
+let data = {pipelines:[], updated:null, error:null};
+let project = new URLSearchParams(location.hash.slice(1)).get("project") || "";
+
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c =>
+  ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+function span(sec){
+  sec = Math.max(0, Math.round(sec));
+  if (sec < 60) return sec + "s";
+  const m = Math.floor(sec/60), s = sec%60;
+  if (m < 60) return m + "m " + String(s).padStart(2,"0") + "s";
+  const h = Math.floor(m/60);
+  return h < 24 ? h + "h " + (m%60) + "m" : Math.floor(h/24) + "d " + (h%24) + "h";
+}
+function ago(iso){
+  const sec = (Date.now() - Date.parse(iso))/1000;
+  if (sec < 60) return "just now";
+  if (sec < 3600) return Math.floor(sec/60) + " min ago";
+  if (sec < 86400) return Math.floor(sec/3600) + " h ago";
+  return Math.floor(sec/86400) + " d ago";
+}
+
+function timeCell(r){
+  if (r.state === "running" && r.started)
+    return `<span data-since="${esc(r.started)}">${span((Date.now()-Date.parse(r.started))/1000)}</span>
+            <span class="sub">${esc(r.stage || "in progress")}</span>`;
+  if (r.state === "queued" && r.queued)
+    return `Waiting <span data-since="${esc(r.queued)}">${span((Date.now()-Date.parse(r.queued))/1000)}</span>
+            <span class="sub">for an agent</span>`;
+  if (r.finished)
+    return `<span data-ago="${esc(r.finished)}">${ago(r.finished)}</span>
+            <span class="sub">${r.started ? "took " + span((Date.parse(r.finished)-Date.parse(r.started))/1000) : ""}</span>`;
+  return "";
+}
+
+function stageTrack(r){
+  if (!r.stages || !r.stages.length) return "";
+  const items = r.stages.map(s => {
+    let t = "";
+    if (s.state === "running" && s.started)
+      t = `<span class="t" data-since="${esc(s.started)}">${span((Date.now()-Date.parse(s.started))/1000)}</span>`;
+    else if (s.state === "waiting")
+      t = `<span class="t">awaiting approval</span>`;
+    else if (s.started && s.finished)
+      t = `<span class="t">${span((Date.parse(s.finished)-Date.parse(s.started))/1000)}</span>`;
+    return `<span class="stage st-${s.state}" title="${esc(s.name)}: ${LABEL[s.state] || s.state}">${esc(s.name)}${t}</span>`;
+  });
+  return `<div class="stages" aria-label="Stages">${items.join('<span class="sep" aria-hidden="true"></span>')}</div>`;
+}
+
+function render(){
+  const all = data.pipelines;
+  const projects = [...new Set(all.map(p => p.project))];
+  const f = document.getElementById("filters");
+  f.innerHTML = projects.length > 1
+    ? ["", ...projects].map(p => `<button type="button" data-p="${esc(p)}" aria-pressed="${p===project}">${p ? esc(p) : "All projects"}</button>`).join("")
+    : "";
+
+  const list = project ? all.filter(p => p.project === project) : all;
+  const n = s => list.filter(p => p.latest.state === s).length;
+  const parts = [];
+  if (n("running")) parts.push(`<b>${n("running")}</b> running`);
+  if (n("failed"))  parts.push(`<b>${n("failed")}</b> failing`);
+  if (n("queued"))  parts.push(`<b>${n("queued")}</b> queued`);
+  parts.push(`<b>${n("passed")}</b> passing`);
+  document.getElementById("summary").innerHTML = list.length ? parts.join(", ") : "";
+
+  const board = document.getElementById("board");
+  if (!list.length){
+    board.innerHTML = `<li class="empty">${data.updated
+      ? "No runs found. Check AZDO_PROJECTS, or raise LOOKBACK_BUILDS if these pipelines run rarely."
+      : "Waiting for the first poll of Azure DevOps."}</li>`;
+    return;
+  }
+  board.innerHTML = list.map(p => {
+    const r = p.latest;
+    const where = projects.length > 1 ? esc(p.project) + (p.folder ? " / " + esc(p.folder) : "") : esc(p.folder);
+    const hist = p.history.map(h =>
+      `<a class="st-${h.state}" href="${esc(h.url)}" target="_blank" rel="noopener"
+          title="${esc(h.number)}: ${LABEL[h.state]}" aria-label="Run ${esc(h.number)}, ${LABEL[h.state]}"></a>`).join("");
+    return `<li class="row">
+      <a class="status st-${r.state}" href="${esc(r.url)}" target="_blank" rel="noopener">${LABEL[r.state]}<span>${esc(r.number)}</span></a>
+      <div class="name" title="${esc(p.name)}">${esc(p.name)}${where ? `<span class="where">${where}</span>` : ""}</div>
+      <div class="detail"><span class="branch" title="${esc(r.branch)}">${esc(r.branch)}</span><span class="who">${esc(r.who)}</span></div>
+      <div class="time">${timeCell(r)}</div>
+      <div class="history" aria-label="Earlier runs, oldest first">${hist}</div>
+      ${stageTrack(r)}
+    </li>`;
+  }).join("");
+}
+
+function renderMeta(){
+  const u = document.getElementById("updated"), b = document.getElementById("banner");
+  const stale = data.updated && (Date.now() - Date.parse(data.updated)) / 1000 > POLL * 3;
+  u.textContent = data.updated ? "Updated " + ago(data.updated) : "";
+  const msg = data.error
+    ? `Can't reach Azure DevOps: ${esc(data.error)} Showing the last good data.`
+    : stale ? "Data hasn't refreshed in a while. Check the dashboard service on the Ansible host." : "";
+  b.innerHTML = msg; b.classList.toggle("show", !!msg);
+}
+
+async function refresh(){
+  try {
+    const r = await fetch("/api/state", {cache:"no-store"});
+    data = await r.json();
+    render();
+  } catch (e) {
+    data.error = "the dashboard server isn't responding.";
+  }
+  renderMeta();
+}
+
+document.getElementById("filters").addEventListener("click", e => {
+  const btn = e.target.closest("button"); if (!btn) return;
+  project = btn.dataset.p;
+  history.replaceState(null, "", project ? "#project=" + encodeURIComponent(project) : location.pathname);
+  render();
+});
+
+setInterval(() => {  // tick running timers without a full re-render
+  document.querySelectorAll("[data-since]").forEach(el => el.textContent = span((Date.now()-Date.parse(el.dataset.since))/1000));
+  document.querySelectorAll("[data-ago]").forEach(el => el.textContent = ago(el.dataset.ago));
+}, 1000);
+setInterval(renderMeta, 5000);
+setInterval(refresh, 5000);
+refresh();
+</script>
+</body>
+</html>
