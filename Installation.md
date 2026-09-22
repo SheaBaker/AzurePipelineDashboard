@@ -37,7 +37,7 @@ LOOKBACK_BUILDS	300	Most recent builds fetched per project. Raise it if rarely r
 
 To check the file without showing the token on screen:
 
-bash
+### bash
 grep -v PAT /opt/azdo-dashboard/azdo.env
 5. Test in the foreground
 bash
@@ -50,7 +50,7 @@ Within a few seconds the log should show a line like polled 14 pipelines across 
 
 Set the service account to the user that owns /opt/azdo-dashboard, then install and start it. Replace ansible with your account name:
 
-bash
+### bash
 sed -i 's/^User=.*/User=ansible/' /opt/azdo-dashboard/azdo-dashboard.service
 grep ^User /opt/azdo-dashboard/azdo-dashboard.service
 sudo cp /opt/azdo-dashboard/azdo-dashboard.service /etc/systemd/system/
@@ -64,6 +64,6 @@ The grep must print User=<your account> before you continue. The status should s
 
 If the page doesn't load from another machine but the service is running, allow the port:
 
-bash
+### bash
 sudo ufw allow 5050/tcp                                                         # Debian / Ubuntu with ufw
 sudo firewall-cmd --add-port=5050/tcp --permanent && sudo firewall-cmd --reload  # RHEL family
