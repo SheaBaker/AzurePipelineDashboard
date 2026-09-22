@@ -6,7 +6,7 @@ A small Flask app that shows the live state of your Azure DevOps pipelines on on
 
 Each pipeline gets one row, with the most recently queued run at the top. A row contains:
 
-Status block: the latest run's result (Passed, Failed, Running, Queued, Partial, Canceled) and its build number. Clicking it opens the run in Azure DevOps.
+_Status block: _the latest run's result (Passed, Failed, Running, Queued, Partial, Canceled) and its build number. Clicking it opens the run in Azure DevOps.
 Pipeline name, with its project and folder.
 Branch and requester for the latest run.
 Timing: a live elapsed timer and the current stage while a run is in progress, "waiting for an agent" while it is queued, and when it finished and how long it took once it is done.
