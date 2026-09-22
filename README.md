@@ -1,10 +1,8 @@
-# AzurePipelineDashboard
-
-Azure Pipelines Live Dashboard
+# Azure Pipelines Live Dashboard
 
 A small Flask app that shows the live state of your Azure DevOps pipelines on one page. It runs on a single Linux host and polls the Azure DevOps REST API. Anyone on the network can open it in a browser, which makes it a good fit for a wall display or a shared status page.
 
-What it shows
+## What it shows
 
 Each pipeline gets one row, with the most recently queued run at the top. A row contains:
 
@@ -21,7 +19,7 @@ Browsers only ever read the cache, so ten people watching the page cost the same
 
 All traffic to Azure DevOps is outbound, so no inbound firewall rule from the internet is needed.
 
-Requirements
+## Requirements
 A Linux host with Python 3.9 or newer (developed on Debian with Python 3.11)
 Outbound HTTPS to dev.azure.com
 An Azure DevOps personal access token (PAT) with the Build → Read scope and nothing more
