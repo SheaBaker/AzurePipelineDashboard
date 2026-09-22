@@ -1,4 +1,4 @@
-## Installation
+# Installation
 
 These steps install to /opt/azdo-dashboard. The paths in the service file assume that location, so if you choose a different one, update them there too.
 
