@@ -25,8 +25,7 @@ Requirements
 A Linux host with Python 3.9 or newer (developed on Debian with Python 3.11)
 Outbound HTTPS to dev.azure.com
 An Azure DevOps personal access token (PAT) with the Build → Read scope and nothing more
-<img width="382" height="368" alt="image" src="https://github.com/user-attachments/assets/d2379ccf-6080-4092-b6d6-d331be77765d" />
+
+<img width="381" height="369" alt="image" src="https://github.com/user-attachments/assets/58b71e08-8bbe-464a-914e-c8ad44748825" />
 
 <img width="380" height="470" alt="image" src="https://github.com/user-attachments/assets/8ef6a529-68bb-4d18-8b26-3de9c8e44c1c" />
-
-
