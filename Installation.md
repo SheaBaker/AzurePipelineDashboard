@@ -78,5 +78,4 @@ If the page doesn't load from another machine but the service is running, allow 
 
 ### bash
 **sudo ufw allow 5050/tcp                                # Debian / Ubuntu with ufw
-sudo firewall-cmd --add-port=5050/tcp --permanent && sudo firewall-cmd --reload  # RHEL family
-**
+sudo firewall-cmd --add-port=5050/tcp --permanent && sudo firewall-cmd --reload  # RHEL family**
