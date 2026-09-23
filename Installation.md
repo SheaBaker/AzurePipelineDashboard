@@ -77,5 +77,6 @@ The grep must print User=<your account> before you continue. The status should s
 If the page doesn't load from another machine but the service is running, allow the port:
 
 ### bash
-sudo ufw allow 5050/tcp                                # Debian / Ubuntu with ufw
+**sudo ufw allow 5050/tcp                                # Debian / Ubuntu with ufw
 sudo firewall-cmd --add-port=5050/tcp --permanent && sudo firewall-cmd --reload  # RHEL family
+**
