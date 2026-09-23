@@ -48,8 +48,7 @@ LOOKBACK_BUILDS	300	Most recent builds fetched per project. Raise it if rarely r
 ## To check the file without showing the token on screen:
 
 ### bash
-**grep -v PAT /opt/azdo-dashboard/azdo.env
-**
+**grep -v PAT /opt/azdo-dashboard/azdo.env**
 
 
 5. Test in the foreground
