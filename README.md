@@ -55,6 +55,7 @@ A release shows the result of the furthest environment it has been deployed to. 
 **All traffic to Azure DevOps is outbound, so no inbound firewall rule from the internet is needed.**
 
 <img width="452" height="784" alt="image" src="https://github.com/user-attachments/assets/f2df4991-2bf0-4646-b4b2-f0ae15980f0f" />
+
 **Browsers only read the cache.** Ten people watching the page cost the same number of Azure DevOps API calls as one.
 
 **Finished work is cached.** A finished build's stage timeline never changes, so it is fetched once. Full release details are fetched only for releases that are deploying or awaiting approval.
@@ -65,6 +66,7 @@ A release shows the result of the furthest environment it has been deployed to. 
 
 ## Tech stack
 Python 3, Flask, Requests, gunicorn and systemd on the server. The front end is plain HTML, CSS and JavaScript in one template, with no framework or build step. It uses the Azure DevOps REST API 7.1: Builds, build timelines, and classic Releases, following the continuation tokens that the Releases API uses to page through results.
+
 <img width="464" height="420" alt="image" src="https://github.com/user-attachments/assets/daea89f1-e410-4095-af68-779e4b5cd4f3" />
 
 ## Getting started
