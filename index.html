@@ -61,6 +61,7 @@ h1 small{font-weight:400;color:var(--muted);font-size:1rem;margin-left:.5rem}
 .st-running{background:var(--running)} .st-partial{background:var(--partial)}
 .st-queued{background:var(--queued)} .st-canceled{background:var(--canceled)}
 .st-unknown{background:var(--unknown)}
+.st-waiting{background:var(--partial)} .st-pending{background:var(--canceled)}
 .status.st-running{animation:pulse 2.4s ease-in-out infinite}
 @keyframes pulse{50%{filter:brightness(1.18)}}
 @media (prefers-reduced-motion:reduce){.status.st-running{animation:none}}
@@ -84,7 +85,8 @@ h1 small{font-weight:400;color:var(--muted);font-size:1rem;margin-left:.5rem}
 .seg{display:inline-flex;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:3px}
 .seg button{font:inherit;font-size:.9375rem;border:0;background:none;color:var(--muted);padding:.3rem .95rem;border-radius:999px;cursor:pointer}
 .seg button[aria-selected="true"],.seg button[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
-#tabs{margin-left:auto}
+#source{margin-left:auto}
+.n-queued .dot{border-color:#8A7BD0}
 #updated{margin-left:0}
 
 .flowpanel{background:#0B1220;color:#E6ECF1;border-radius:14px;padding:1.25rem 1.5rem 1rem;margin-bottom:1rem}
@@ -149,7 +151,7 @@ h1 small{font-weight:400;color:var(--muted);font-size:1rem;margin-left:.5rem}
 .log .by{color:var(--muted);font-size:.875rem}
 .log .st{grid-row:1 / span 2;grid-column:2;align-self:center;font-size:.9375rem;text-align:right}
 .tx-passed{color:var(--passed)} .tx-failed{color:var(--failed)} .tx-running{color:var(--running)}
-.tx-partial{color:var(--partial)} .tx-queued{color:var(--queued)} .tx-canceled,.tx-unknown{color:var(--muted)}
+.tx-partial,.tx-waiting{color:var(--partial)} .tx-pending{color:var(--muted)} .tx-queued{color:var(--queued)} .tx-canceled,.tx-unknown{color:var(--muted)}
 @media (prefers-reduced-motion:reduce){.n-running .dot,.link.live::after{animation:none}}
 @media (max-width:640px){.kpis b{font-size:1.2rem}.flowpanel{padding:1rem}}
 
@@ -165,6 +167,10 @@ h1 small{font-weight:400;color:var(--muted);font-size:1rem;margin-left:.5rem}
 <header>
   <h1>Pipelines<small>{{ org }}</small></h1>
   <p id="summary" aria-live="polite">Loading…</p>
+  <div id="source" class="seg" role="tablist" aria-label="Source">
+    <button type="button" role="tab" data-s="builds">Builds</button>
+    <button type="button" role="tab" data-s="releases">Releases</button>
+  </div>
   <div id="tabs" class="seg" role="tablist" aria-label="View">
     <button type="button" role="tab" data-v="board">Board</button>
     <button type="button" role="tab" data-v="flow">Live flow</button>
@@ -190,7 +196,7 @@ h1 small{font-weight:400;color:var(--muted);font-size:1rem;margin-left:.5rem}
       <div class="seg" id="health"><button type="button" data-h="all">All pipelines</button><button type="button" data-h="failing">Failing only</button></div>
     </div>
   </div>
-  <div class="log"><h2>Recent runs</h2><ul id="log"></ul></div>
+  <div class="log"><h2 id="logTitle">Recent runs</h2><ul id="log"></ul></div>
 </section>
 
 <script>
@@ -202,12 +208,18 @@ let data = {pipelines:[], updated:null, error:null};
 const hashQ = new URLSearchParams(location.hash.slice(1));
 let project = hashQ.get("project") || "";
 let view = hashQ.get("view") === "flow" ? "flow" : "board";
+let source = hashQ.get("src") === "releases" ? "releases" : "builds";
+const word = st => (source === "releases" && st === "running") ? "Deploying" : LABEL[st];
+const ACTIVE = s => s === "running" || s === "queued" || s === "waiting";
+const runSecs = r => r.duration ?? ((r.started && r.finished) ? (Date.parse(r.finished) - Date.parse(r.started)) / 1000 : null);
+const srcError = () => data.error || (source === "releases" ? data.release_error : null);
 let branch = "", health = "all", branchKey = "";
 
 function saveHash(){
   const q = new URLSearchParams();
   if (project) q.set("project", project);
   if (view !== "board") q.set("view", view);
+  if (source !== "builds") q.set("src", source);
   const h = q.toString();
   history.replaceState(null, "", h ? "#" + h : location.pathname);
 }
@@ -239,9 +251,14 @@ function timeCell(r){
   if (r.state === "queued" && r.queued)
     return `Waiting <span data-since="${esc(r.queued)}">${span((Date.now()-Date.parse(r.queued))/1000)}</span>
             <span class="sub">for an agent</span>`;
-  if (r.finished)
+  if (r.state === "waiting")
+    return `Awaiting approval<span class="sub">${esc(r.stage || "")}</span>`;
+  if (r.finished) {
+    const d = runSecs(r);
     return `<span data-ago="${esc(r.finished)}">${ago(r.finished)}</span>
-            <span class="sub">${r.started ? "took " + span((Date.parse(r.finished)-Date.parse(r.started))/1000) : ""}</span>`;
+            <span class="sub">${d != null ? "took " + span(d) : ""}</span>`;
+  }
+  if (r.state === "pending") return `Not deployed<span class="sub">waiting for a manual deploy</span>`;
   return "";
 }
 
@@ -253,8 +270,8 @@ function stageTrack(r){
       t = `<span class="t" data-since="${esc(s.started)}">${span((Date.now()-Date.parse(s.started))/1000)}</span>`;
     else if (s.state === "waiting")
       t = `<span class="t">awaiting approval</span>`;
-    else if (s.started && s.finished)
-      t = `<span class="t">${span((Date.parse(s.finished)-Date.parse(s.started))/1000)}</span>`;
+    else if (runSecs(s) != null)
+      t = `<span class="t">${span(runSecs(s))}</span>`;
     return `<span class="stage st-${s.state}" title="${esc(s.name)}: ${LABEL[s.state] || s.state}">${esc(s.name)}${t}</span>`;
   });
   return `<div class="stages" aria-label="Stages">${items.join('<span class="sep" aria-hidden="true"></span>')}</div>`;
@@ -275,15 +292,17 @@ function node(s){
   if (s.state === "running" && s.started)
     sub = `<span data-since="${esc(s.started)}">${span((Date.now()-Date.parse(s.started))/1000)}</span>`;
   else if (s.state === "waiting") sub = "approval";
-  else if (s.started && s.finished) sub = span((Date.parse(s.finished)-Date.parse(s.started))/1000);
+  else if (runSecs(s) != null) sub = span(runSecs(s));
   return `<div class="node n-${s.state}" title="${esc(s.name)}: ${LABEL[s.state] || s.state}">
     <span class="lbl"><span>${esc(s.name)}</span></span><span class="dot">${ICON[s.state] || ""}</span><span class="sub">${sub}</span></div>`;
 }
 
 function laneStatus(r){
   if (r.state === "running" && r.started)
-    return `Running <span data-since="${esc(r.started)}">${span((Date.now()-Date.parse(r.started))/1000)}</span>`;
+    return `${word("running")} <span data-since="${esc(r.started)}">${span((Date.now()-Date.parse(r.started))/1000)}</span>`;
   if (r.state === "queued") return "Waiting for an agent";
+  if (r.state === "waiting") return `Awaiting approval${r.stage ? " · " + esc(r.stage) : ""}`;
+  if (r.state === "pending") return "Not deployed";
   return `${LABEL[r.state]}${r.finished ? " " + ago(r.finished) : ""}`;
 }
 
@@ -311,8 +330,10 @@ function lane(p){
 }
 
 function logStatus(r){
-  if (r.state === "running") return `Running${r.stage ? " · " + esc(r.stage) : ""}`;
+  if (r.state === "running") return `${word("running")}${r.stage ? " · " + esc(r.stage) : ""}`;
   if (r.state === "queued") return "Queued";
+  if (r.state === "waiting") return `Awaiting approval${r.stage ? " · " + esc(r.stage) : ""}`;
+  if (r.state === "pending") return "Not deployed";
   return `${LABEL[r.state]}${r.finished ? " " + ago(r.finished) : ""}`;
 }
 
@@ -332,14 +353,14 @@ function renderFlow(list){
   let rows = list.filter(p => !branch || p.latest.branch === branch);
   if (health === "failing") rows = rows.filter(p => p.latest.state === "failed");
 
-  const active = rows.filter(p => p.latest.state === "running" || p.latest.state === "queued");
+  const active = rows.filter(p => ACTIVE(p.latest.state));
   const shown = (active.length ? active : rows.slice(0, 3)).slice(0, 6);
   document.getElementById("lanes").innerHTML = shown.length
-    ? (active.length ? "" : `<p class="none">Nothing running right now. Showing the most recent runs.</p>`) + shown.map(lane).join("")
+    ? (active.length ? "" : `<p class="none">Nothing ${source === "releases" ? "deploying" : "running"} right now. Showing the most recent ${source === "releases" ? "releases" : "runs"}.</p>`) + shown.map(lane).join("")
     : `<p class="none">No pipelines match these filters.</p>`;
 
-  document.getElementById("activeChip").innerHTML = `Active runs: <b>${active.length}</b>`;
-  document.getElementById("pollChip").innerHTML = data.error ? `Poller: <span class="bad">error</span>`
+  document.getElementById("activeChip").innerHTML = `Active ${source === "releases" ? "releases" : "runs"}: <b>${active.length}</b>`;
+  document.getElementById("pollChip").innerHTML = srcError() ? `Poller: <span class="bad">error</span>`
     : isStale() ? `Poller: <span class="bad">stale</span>` : `Poller: <span class="ok">healthy</span>`;
 
   const states = rows.flatMap(p => [...p.history.map(h => h.state), p.latest.state]);
@@ -351,8 +372,7 @@ function renderFlow(list){
     ks.className = pct >= 90 ? "good" : pct >= 70 ? "warn" : "crit";
   } else { ks.textContent = "–"; ks.className = "calm"; }
 
-  const durs = rows.map(p => p.latest).filter(r => r.started && r.finished)
-    .map(r => (Date.parse(r.finished) - Date.parse(r.started)) / 1000);
+  const durs = rows.map(p => p.latest).filter(r => r.finished).map(runSecs).filter(d => d != null);
   document.getElementById("kDuration").textContent = durs.length ? span(durs.reduce((a, b) => a + b, 0) / durs.length) : "–";
 
   const alerts = rows.filter(p => p.latest.state === "failed").length;
@@ -369,7 +389,9 @@ function renderFlow(list){
 }
 
 function render(){
-  const all = data.pipelines;
+  const all = (source === "releases" ? data.releases : data.pipelines) || [];
+  document.querySelectorAll("#source button").forEach(b => b.setAttribute("aria-selected", b.dataset.s === source));
+  document.getElementById("logTitle").textContent = source === "releases" ? "Recent releases" : "Recent runs";
   const projects = [...new Set(all.map(p => p.project))];
   const f = document.getElementById("filters");
   f.innerHTML = projects.length > 1
@@ -379,7 +401,8 @@ function render(){
   const list = project ? all.filter(p => p.project === project) : all;
   const n = s => list.filter(p => p.latest.state === s).length;
   const parts = [];
-  if (n("running")) parts.push(`<b>${n("running")}</b> running`);
+  if (n("running")) parts.push(`<b>${n("running")}</b> ${source === "releases" ? "deploying" : "running"}`);
+  if (n("waiting")) parts.push(`<b>${n("waiting")}</b> awaiting approval`);
   if (n("failed"))  parts.push(`<b>${n("failed")}</b> failing`);
   if (n("queued"))  parts.push(`<b>${n("queued")}</b> queued`);
   parts.push(`<b>${n("passed")}</b> passing`);
@@ -392,7 +415,9 @@ function render(){
   if (view === "flow") { renderFlow(list); return; }
   if (!list.length){
     board.innerHTML = `<li class="empty">${data.updated
-      ? "No runs found. Check AZDO_PROJECTS, or raise LOOKBACK_BUILDS if these pipelines run rarely."
+      ? (source === "releases"
+          ? (data.release_error ? "Releases couldn't be loaded. See the banner above." : "No releases found. Check AZDO_PROJECTS, or raise LOOKBACK_RELEASES if these deploy rarely.")
+          : "No runs found. Check AZDO_PROJECTS, or raise LOOKBACK_BUILDS if these pipelines run rarely.")
       : "Waiting for the first poll of Azure DevOps."}</li>`;
     return;
   }
@@ -403,7 +428,7 @@ function render(){
       `<a class="st-${h.state}" href="${esc(h.url)}" target="_blank" rel="noopener"
           title="${esc(h.number)}: ${LABEL[h.state]}" aria-label="Run ${esc(h.number)}, ${LABEL[h.state]}"></a>`).join("");
     return `<li class="row">
-      <a class="status st-${r.state}" href="${esc(r.url)}" target="_blank" rel="noopener">${LABEL[r.state]}<span>${esc(r.number)}</span></a>
+      <a class="status st-${r.state}" href="${esc(r.url)}" target="_blank" rel="noopener">${word(r.state)}<span>${esc(r.number)}</span></a>
       <div class="name" title="${esc(p.name)}">${esc(p.name)}${where ? `<span class="where">${where}</span>` : ""}</div>
       <div class="detail"><span class="branch" title="${esc(r.branch)}">${esc(r.branch)}</span><span class="who">${esc(r.who)}</span></div>
       <div class="time">${timeCell(r)}</div>
@@ -417,8 +442,9 @@ function renderMeta(){
   const u = document.getElementById("updated"), b = document.getElementById("banner");
   const stale = isStale();
   u.textContent = data.updated ? "Updated " + ago(data.updated) : "";
-  const msg = data.error
-    ? `Can't reach Azure DevOps: ${esc(data.error)} Showing the last good data.`
+  const err = srcError();
+  const msg = err
+    ? `Can't ${source === "releases" && !data.error ? "load releases" : "reach Azure DevOps"}: ${esc(err)} Showing the last good data.`
     : stale ? "Data hasn't refreshed in a while. Check the dashboard service on the Ansible host." : "";
   b.innerHTML = msg; b.classList.toggle("show", !!msg);
 }
@@ -439,6 +465,10 @@ document.getElementById("filters").addEventListener("click", e => {
   project = btn.dataset.p;
   saveHash();
   render();
+});
+document.getElementById("source").addEventListener("click", e => {
+  const btn = e.target.closest("button"); if (!btn) return;
+  source = btn.dataset.s; project = ""; branch = ""; branchKey = ""; saveHash(); render(); renderMeta();
 });
 document.getElementById("tabs").addEventListener("click", e => {
   const btn = e.target.closest("button"); if (!btn) return;
