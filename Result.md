@@ -6,4 +6,5 @@
 ### Board View - Release Pipelines
 
 ### Live Flow View - Release Pipelines
+<img width="1861" height="927" alt="releases-live-flow-demo" src="https://github.com/user-attachments/assets/af4beae1-7b69-4346-af67-1f27ca9bce25" />
 
