@@ -2,19 +2,15 @@
 
 A self-hosted status page for Azure DevOps. It shows every build pipeline and classic release pipeline across your projects on one screen, updating live. It's built with Python and Flask, polls the Azure DevOps REST APIs, and runs as a systemd service on a single Linux host. Anyone on the network can open it in a browser, which makes it a good fit for a wall display or a shared team page.
 
-Why I built it
-
+### Why I built it
 Azure DevOps shows pipeline status one project and one pipeline at a time. With hundreds of pipelines spread across several projects, answering "what's running, what's failing, and what's waiting on an approval?" meant clicking through a lot of pages. This dashboard puts the answer on one screen that the whole team can keep open.
 
-Features
-
+### Features
 The header has two switches, and every combination works:
-
-Board
+#### Board
   Builds: One row per build or YAML pipeline, with its latest run's status, stages and history
   Releases: Running builds drawn as connected stage nodes with live timers
-
-Live Flow
+#### Live Flow
   Builds: One row per classic release definition, with its environments as stages
   Releases: Deploying and approval-held releases drawn as connected environment nodes
 
