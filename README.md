@@ -8,11 +8,11 @@ Azure DevOps shows pipeline status one project and one pipeline at a time. With 
 ### Features
 The header has two switches, and every combination works:
 #### Board
-  Builds: One row per build or YAML pipeline, with its latest run's status, stages and history
-  Releases: Running builds drawn as connected stage nodes with live timers
+- Builds: One row per build or YAML pipeline, with its latest run's status, stages and history
+- Releases: Running builds drawn as connected stage nodes with live timers
 #### Live Flow
-  Builds: One row per classic release definition, with its environments as stages
-    Releases: Deploying and approval-held releases drawn as connected environment nodes
+- Builds: One row per classic release definition, with its environments as stages
+- Releases: Deploying and approval-held releases drawn as connected environment nodes
 
 ## Board view 
 ### Each row shows:
