@@ -4,11 +4,11 @@ After=network-online.target
 Wants=network-online.target
 
 [Service]
-# Set to the account that owns /opt/azdo-dashboard (see README, step 5)
+# Set to the account that owns /opt/azdo-dashboard (see Installation.md, step 6)
 User=YOUR_USER
 WorkingDirectory=/opt/azdo-dashboard
 EnvironmentFile=/opt/azdo-dashboard/azdo.env
-# One worker only: each worker would start its own poller thread
+# One worker only: each worker would start its own poller threads
 ExecStart=/opt/azdo-dashboard/venv/bin/gunicorn -w 1 --threads 4 -b 0.0.0.0:5050 app:app
 Restart=on-failure
 RestartSec=10

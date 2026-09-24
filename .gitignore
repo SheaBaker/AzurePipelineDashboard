@@ -1,0 +1,11 @@
+# Secrets: the real config holds the Azure DevOps PAT
+azdo.env
+
+# Python
+venv/
+__pycache__/
+*.pyc
+
+# Deployment leftovers
+*.tgz
+*.bak
