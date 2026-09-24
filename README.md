@@ -19,10 +19,14 @@ The header has two switches, and every combination works:
 **Status block**: 
 - The latest result (Passed, Failed, Running or Deploying, Queued, Partial, Canceled, Awaiting approval, Not deployed) and    its build or release number. Clicking it opens the run in Azure DevOps.
 - Name, project and folder of the pipeline or release definition.
+
 **Branch and requester** of the latest run.
+
 **Timing**: a live elapsed timer while running, the wait time while queued, and how long ago it finished and how long it took once it's done.
+
 **Stage track**: every stage (builds) or environment (releases) in order, colored by state. The running stage pulses, and stages held at an approval gate are marked. Classic builds, and YAML pipelines without stages, show their jobs instead.
-**History stri**p: one colored tick per earlier run, oldest on the left. Each tick links to its run, so a one-off failure is easy to tell apart from a streak.
+
+**History strip**: one colored tick per earlier run, oldest on the left. Each tick links to its run, so a one-off failure is easy to tell apart from a streak.
 
 ## Live flow view. 
 A dark panel shows each run or release in progress as a lane of connected nodes. Completed stages get a check, the active stage pulses with a traveling marker toward the next stage, and approval gates are dashed amber. When nothing is active, the panel shows the three most recent runs. 
