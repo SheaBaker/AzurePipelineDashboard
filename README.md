@@ -30,16 +30,23 @@ The header has two switches, and every combination works:
 
 ## Live flow view. 
 A dark panel shows each run or release in progress as a lane of connected nodes. Completed stages get a check, the active stage pulses with a traveling marker toward the next stage, and approval gates are dashed amber. When nothing is active, the panel shows the three most recent runs. 
+
 ### Below it you get:
 **Tiles** for success rate, average duration and active alerts, recalculated for the current filters.
+
 A **branch filter** and a **"Failing only"** toggle.
+
 **A recent activity log** listing each run's number, branch, requester and status.
 
 ## On both views:
 **Project filter buttons** appear when more than one project is configured.
+
 **Newest first.** Builds are sorted by when their latest run was queued. Releases are sorted by their latest activity, so a deploy to Prod today moves an older release to the top.
+
 **The view is kept in the URL**, so a wall display can be pinned to one. For example, #src=releases&view=flow&project=Accounting opens the Live flow view for releases, filtered to the Accounting project.
+
 **Light and dark mode** follow the viewer's system setting.
+
 **Outages don't blank the page.** If Azure DevOps can't be reached, the page keeps showing the last good data under a banner that explains what went wrong.
 
 **How release status is decided:** 
@@ -49,8 +56,11 @@ A release shows the result of the furthest environment it has been deployed to. 
 
 <img width="452" height="784" alt="image" src="https://github.com/user-attachments/assets/f2df4991-2bf0-4646-b4b2-f0ae15980f0f" />
 **Browsers only read the cache.** Ten people watching the page cost the same number of Azure DevOps API calls as one.
+
 **Finished work is cached.** A finished build's stage timeline never changes, so it is fetched once. Full release details are fetched only for releases that are deploying or awaiting approval.
+
 **Builds and releases fail independently.** If the releases poll fails, for example because the PAT lacks the Release scope, the Releases tab shows a banner and the Builds tab keeps working normally.
+
 **Only outbound traffic.** The host makes outbound HTTPS calls to Azure DevOps, so no inbound firewall rule from the internet is needed.
 
 ## Tech stack
